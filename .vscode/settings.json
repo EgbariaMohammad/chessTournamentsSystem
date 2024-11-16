@@ -1,0 +1,13 @@
+{
+    "cSpell.words": [
+        "Baraa",
+        "Egbaria"
+    ],
+    "files.associations": {
+        "games.h": "c",
+        "map.h": "c",
+        "game.h": "c",
+        "chesssystem.h": "c",
+        "player.h": "c"
+    }
+}
