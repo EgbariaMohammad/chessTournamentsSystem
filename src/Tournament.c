@@ -7,10 +7,10 @@
 #include "../includes/Tournament.h"
 #include "../includes/Game.h"
 #include "../includes/Player.h"
-// #include "../utilities.h"
+#include "../utilities.h"
 
-#define CLOSED 0
-#define ON_GOING 1
+#define ON_GOING 0
+#define ENDED 1
 
 struct Tournament_t
 {
@@ -22,8 +22,7 @@ struct Tournament_t
     char* tournamentLocation;
     int winnerID;
     Map gamesMap;
-    Map participatingPlayers;
-    bool isTournamentClosed;
+    bool hasTournamentEnded;
 };
 
 Tournament TournamentCreate(int tournamentID, int maxGamesPerPlayer, const char* tournamentLocation)
@@ -34,8 +33,9 @@ Tournament TournamentCreate(int tournamentID, int maxGamesPerPlayer, const char*
 
     newTournament->tournamentID = tournamentID;
     newTournament->maxGamesPerPlayer = maxGamesPerPlayer;
-    newTournament->maxPlayingTime = newTournament->winnerID = newTournament->totalTimePlayed = newTournament->totalGamesPlayed = 0;
-    newTournament->isTournamentClosed = ON_GOING;
+    newTournament->maxPlayingTime = newTournament->winnerID = 0;
+    newTournament->totalTimePlayed = newTournament->totalGamesPlayed = 0;
+    newTournament->hasTournamentEnded = ON_GOING;
 
     int length = strlen(tournamentLocation);
     newTournament->tournamentLocation = malloc(length+1);
@@ -55,42 +55,41 @@ Tournament TournamentCreate(int tournamentID, int maxGamesPerPlayer, const char*
     }
 
     // newTournament->participatingPlayers = mapCreate(PlayerCopy, copyIntkey, PlayerDestroy, freeIntKey, Intkeycompare);
-    if(newTournament->participatingPlayers == NULL)
-    {
-        free(newTournament->tournamentLocation);
-        free(newTournament->gamesMap);
-        free(newTournament);
-        return NULL;
-    }
+    // if(newTournament->participatingPlayers == NULL)
+    // {
+    //     free(newTournament->tournamentLocation);
+    //     free(newTournament->gamesMap);
+    //     free(newTournament);
+    //     return NULL;
+    // }
     return newTournament;
 }
 
 void* TournamentCopy(void* t)
 {
     Tournament tournament = (Tournament) t;
-    if(!tournament)
-        return NULL;
+    if(!tournament) return NULL;
 
-    Tournament newTournament = tournamentCreate(tournament->tournamentID, tournament->maxGamesPerPlayer, tournament->tournamentLocation);
-    if(newTournament == NULL)
-        return NULL;
+    Tournament newTournament = tournamentCreate(tournament->tournamentID,
+                                                tournament->maxGamesPerPlayer, tournament->tournamentLocation);
+    if(newTournament == NULL) return NULL;
 
     mapDestroy(newTournament->gamesMap); // has been allocated in Create
     newTournament->gamesMap = mapCopy(tournament->gamesMap);
-    if(newTournament->gamesMap == NULL)
+    if(!newTournament->gamesMap)
     {
         TournamentDestroy(newTournament);
         return NULL;
     }
 
-    mapDestroy(newTournament->participatingPlayers); // has been allocated in Create
-    newTournament->participatingPlayers = mapCopy(tournament->participatingPlayers);
-    if(newTournament->participatingPlayers == NULL)
-    {
-        TournamentDestroy(newTournament);
-        return NULL;
-    }
-    newTournament->isTournamentClosed = tournament->isTournamentClosed;
+    // mapDestroy(newTournament->participatingPlayers); // has been allocated in Create
+    // newTournament->participatingPlayers = mapCopy(tournament->participatingPlayers);
+    // if(newTournament->participatingPlayers == NULL)
+    // {
+    //     TournamentDestroy(newTournament);
+    //     return NULL;
+    // }
+    newTournament->hasTournamentEnded = tournament->hasTournamentEnded;
     newTournament->winnerID = tournament->winnerID;
     newTournament->totalTimePlayed = tournament->totalTimePlayed;
     newTournament->totalGamesPlayed = tournament->totalGamesPlayed;
@@ -111,10 +110,53 @@ void TournamentDestroy(void* t)
     free(tournament);
 }
 
+Tournament* TournamentAddGame(Tournament tournament, int player1ID, int player2ID, int winnerID, int playTime)
+{
+    Game newGame = GameCreate(player1ID, player2ID, winnerID, playTime);
+    if(!newGame) return NULL;
+
+    if(mapPut(tournament->gamesMap, &(tournament->totalGamesPlayed), newGame) == MAP_OUT_OF_MEMORY)
+    {
+        GameDestroy(newGame);
+        return NULL;
+    }
+    tournament->totalGamesPlayed++;
+    tournament->totalTimePlayed += playTime;
+    return true;
+}
+
+bool TournamentDoesGameExistBetweenPlayers(Tournament tournament, int player1ID, int player2ID)
+{
+    if(!tournament || player1ID == player2ID)
+        return false;
+
+    MAP_FOREACH(int*, key, tournament->gamesMap)
+    {
+        Game currGame = mapGet(tournament->gamesMap, key);
+        if(GameIsPlayerInGame(currGame, player1ID) && GameIsPlayerInGame(currGame, player2ID))
+            return true;
+    }
+    return false;
+}
+
+bool TournamentHasPlayerReachedGamesLimit(Tournament tournament, int playerID) {
+    if (!tournament) return false;
+
+    int playedGames = 0;
+    MAP_FOREACH(int*, key, tournament->gamesMap) {
+        Game currGame = mapGet(tournament->gamesMap, key);
+        playedGames += GameIsPlayerInGame(currGame, playerID);
+    }
+    return !(playedGames < tournament->maxGamesPerPlayer);
+}
+
+void TournamentEndTournament(Tournament tournament) {
+    tournament->hasTournamentEnded = ENDED;
+}
 
 int TournamentGetID(Tournament tournament)                 { return tournament->tournamentID; }
-int TournamentGetMaxGamesP(Tournament tournament)          { return tournament->maxGamesPerPlayer; }
-const char* TournamentGetlocation(Tournament tournament)   { return tournament->tournamentLocation; }
+int TournamentGetMaxGamesPerPlayer(Tournament tournament)  { return tournament->maxGamesPerPlayer; }
+const char* TournamentGetLocation(Tournament tournament)   { return tournament->tournamentLocation; }
 
 Map TournamentGetGamesList(Tournament tournament) { return tournament->gamesMap; }
 
@@ -124,11 +166,7 @@ int TournamentGetWinnerID(Tournament tournament) { return tournament->winnerID; 
 
 void TournamentSetWinnerID(Tournament tournament, int winnerID) { tournament->winnerID = winnerID; }
 
-bool TournamentIsTournamentClosed(Tournament tournament) { return tournament->isTournamentClosed; }
-
-void TournamentCloseTournament(Tournament tournament) {
-    tournament->isTournamentClosed = CLOSED;
-}
+bool TournamentHasTournamentEnded(Tournament tournament) { return tournament->hasTournamentEnded; }
 
 int TournamentGetTotalTime(Tournament tour)     { return tour->totalTimePlayed; }
 int TournamentGetNumOfGames(Tournament tour)    { return tour->totalGamesPlayed; }

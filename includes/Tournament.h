@@ -11,11 +11,13 @@ Tournament TournamentCreate(int tournamentID, int maxGamesPerPlayer, const char*
 void TournamentDestroy(void* t);
 void* TournamentCopy(void* t);
 
+bool TournamentDoesGameExistBetweenPlayers(Tournament tournament, int player1ID, int player2ID);
+
 int TournamentGetID(Tournament tournament);
 int TournamentGetGamesLimitPerPlayer(Tournament tournament);
 const char* TournamentGetLocation(Tournament tournament);
 
-void TournamentAddGame(Tournament tournament, Game game);
+Tournament* TournamentAddGame(Tournament tournament, int player1ID, int player2ID, int winnerID, int playTime);
 void TournamentRemovePlayer(Tournament tournament, int playerID);
 
 // *** probably should be removed *** //

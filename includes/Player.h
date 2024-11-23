@@ -18,13 +18,22 @@ int PlayerGetPlayerID(Player player);
 bool PlayerGetPlayingStatus(Player player);
 int PlayerGetNumOfPlayedGames(Player player);
 
+bool PlayerIsPlayerDeleted(Player player);
+void PlayerRemovePlayer(Player player);
+
+void PlayerResetStats(Player player);
+
+
 bool PlayerRemoveTournament(Player player, int tournamentID);
 Map PlayerGetTournamentsList(Player player);
 
-void PlayerAddWin(Player player, int num);
-void PlayerAddLoss(Player player, int num);
-void PlayerAddDraw(Player player,int num);
-void PlayerAddPlayTime(Player player,int num);
+void PlayerAddWin(Player player);
+void PlayerAddLoss(Player player);
+void PlayerAddDraw(Player player);
+void PlayerRemoveWin(Player player);
+void PlayerRemoveLoss(Player player);
+void PlayerRemoveDraw(Player player);
+void PlayerAddPlayTime(Player player, int timePlayed);
 
 
 
