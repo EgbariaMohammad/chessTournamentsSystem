@@ -8,7 +8,7 @@
 #include "utilities.h"
 
 VoidPtr copyIntKey(VoidPtr key) {
-   if (!key) return NULL;
+   if (!key) return key;
     int* newKey = malloc(sizeof(*newKey));
     if (!newKey) return NULL;
     *newKey = *(int*)key;
